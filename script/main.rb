@@ -30,14 +30,23 @@ def getCorpInfo(corpIds)
       f.read
     end
     corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
-    p "##################"
-    trs = corpDoc.xpath("//div[@class='companyInfo']//table[@class='dataTable']//tr")
-    trs.each do |tr|
-      if tr.children.search("[@class='heading']").text == "募集人数" then
-        p tr.children.search("[@class='sameSize']").text
-      end
-    end
+    getDataFromPlace(corpDoc,"募集人数")
   end
+end
+
+#
+# Parameter : document , String
+# class=placeにある、key (募集人数,従業員数)の取得を行う
+# 
+def getDataFromPlace(doc,key)
+  dls = doc.xpath("//div[@class='place']//dl")
+  selectedDl = dls.select do |dl|
+    dl.children.search('dt').text == key
+  end
+  if selectedDl.size > 0 then
+  	return selectedDl[0].children.search('dd').text
+  end
+  return ""
 end
 
 getCorpInfo(corpIds)
