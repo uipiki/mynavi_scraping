@@ -22,12 +22,12 @@ scriptDir=`dirname $0`
 year=${1:-17}
 
 echo "[INFO] -----------------------------------------------------"
-echo "[INFO] Start scrapong " 20${year} " mynavi"
+echo "[INFO] Start scraping " 20${year} " mynavi"
 echo "[INFO] -----------------------------------------------------"
 
 ruby ${scriptDir}/main.rb --year ${year} --file ${curDir}/result.csv
 
 echo "[INFO] -----------------------------------------------------"
-echo "[INFO] End scrapong"
+echo "[INFO] End scraping"
 echo "[INFO] check ${curDir}/result.csv"
 echo "[INFO] -----------------------------------------------------"
