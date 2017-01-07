@@ -152,12 +152,12 @@ end
 corpIds = getCorpIdList(Nokogiri::HTML.parse(html, nil, $charset)).split(",")
 
 Parallel.map(corpIds,:in_threads => 10) {|id|
-	begin
+  begin
     getCorpInfo(id).printData
   rescue
-  	puts "error id is " + id
-  	p e.backtrace
-  	$errorIds.push(id)
+    puts "error id is " + id
+    p e.backtrace
+    $errorIds.push(id)
   end
 }
 $resCsv.close
