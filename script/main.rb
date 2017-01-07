@@ -1,16 +1,6 @@
 require 'open-uri'
 require 'nokogiri'
 
-class CorpInfo
-  def initialize(corpName,empNum,reqNum,mail,tel)
-  	@corpName = corpName
-  	@empNum = empNum
-  	@reqNum = reqNum
-  	@mail = mail
-  	@tel = tel 
-  end
-end
-
 # スクレイピング test
 $urlHeader = 'http://job.mynavi.jp'
 $charset = nil
