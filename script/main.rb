@@ -1,8 +1,11 @@
-
-
 require 'open-uri'
 require 'nokogiri'
 require 'parallel'
+require 'optparse'
+
+params = ARGV.getopts("","year:17","file:")
+$year = params["year"]
+$resCsv = File.open(params["file"],'a')
 
 $urlHeader = 'http://job.mynavi.jp'
 $charset = nil
@@ -15,11 +18,20 @@ class CorpInfo
     @mail = mail
     @tel = tel 
   end
+  def getData
+  	return @corpName+","+@empNum+","+@reqNum+","+@mail+","+@tel
+  end
   def printData
-    puts @corpName+","+@empNum+","+@reqNum+","+@mail+","+@tel
+  	$resCsv.puts getData
+  end
+  def echoData
+    puts getData
   end
 end
 
+#
+# Parameter : document
+#
 def getCorpIdList(doc) 
   doc.xpath("//input").each do |input|
     if input.attr('name') == "searchIdAllList" then
@@ -32,7 +44,7 @@ end
 # Parameter : String
 #
 def getCorpInfo(id)
-  corpUrl = $urlHeader + '/17/pc/search/corp' + id + '/employment.html'
+  corpUrl = $urlHeader + '/' + $year + '/pc/search/corp' + id + '/employment.html'
   corpHtml = open(corpUrl) do |f|
     charset = f.charset
     f.read
@@ -115,9 +127,9 @@ html = open($urlHeader + '/17/pc/search/query.html?OP:1/') do |f|
   f.read
 end
 
-corpIds = getCorpIdList(Nokogiri::HTML.parse(html, nil, $charset)).split(",")[1..2]
+corpIds = getCorpIdList(Nokogiri::HTML.parse(html, nil, $charset)).split(",")
 
 Parallel.map(corpIds,:in_threads => 10) {|id|
   getCorpInfo(id).printData
 }
-
+$resCsv.close
