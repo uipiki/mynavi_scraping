@@ -1,13 +1,26 @@
+
+
 require 'open-uri'
 require 'nokogiri'
+require 'parallel'
 
-# スクレイピング test
 $urlHeader = 'http://job.mynavi.jp'
 $charset = nil
-# http://job.mynavi.jp
-url = $urlHeader + '/17/pc/search/query.html?OP:1/'
-# http://job.mynavi.jp/17/pc/search/corp111394/employment.html
-def getCorpId(doc) 
+
+class CorpInfo
+  def initialize(corpName,empNum,reqNum,mail,tel)
+    @corpName = corpName
+    @empNum = empNum
+    @reqNum = reqNum
+    @mail = mail
+    @tel = tel 
+  end
+  def printData
+    puts @corpName+","+@empNum+","+@reqNum+","+@mail+","+@tel
+  end
+end
+
+def getCorpIdList(doc) 
   doc.xpath("//input").each do |input|
     if input.attr('name') == "searchIdAllList" then
       return input.attr('value')
@@ -15,24 +28,22 @@ def getCorpId(doc)
   end
 end
 
-html = open(url) do |f|
-  charset = f.charset
-  f.read
-end
-
-corpIds = getCorpId(Nokogiri::HTML.parse(html, nil, $charset)).split(",")
-
-def getCorpInfo(corpIds)
-  corpIds.each do |id|
-    corpUrl = $urlHeader + '/17/pc/search/corp' + id + '/employment.html'
-    corpHtml = open(corpUrl) do |f|
-      charset = f.charset
-      f.read
-    end
-    corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
-    getDataFromPlace(corpDoc,"募集人数")
-    getMail(corpDoc)
+#
+# Parameter : String
+#
+def getCorpInfo(id)
+  corpUrl = $urlHeader + '/17/pc/search/corp' + id + '/employment.html'
+  corpHtml = open(corpUrl) do |f|
+    charset = f.charset
+    f.read
   end
+  corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
+  corpName = corpDoc.title.split('|')[0]
+  empNum = getDataFromPlace(corpDoc,"従業員")
+  reqNum = getDataFromPlace(corpDoc,"募集人数")
+  mail = getMail(corpDoc)
+  tel = getTel(corpDoc)
+  return CorpInfo.new(corpName,empNum,reqNum,mail,tel)
 end
 
 #
@@ -45,7 +56,7 @@ def getDataFromPlace(doc,key)
     dl.children.search('dt').text == key
   end
   if selectedDl.size > 0 then
-  	return selectedDl[0].children.search('dd').text
+    return selectedDl[0].children.search('dd').text
   end
   return ""
 end
@@ -57,15 +68,56 @@ end
 # 無ければ問い合わせ先から検索する。
 # 
 def getMail(doc)
-  trs = corpDoc.xpath("//tr")
-  inquireInfo = trs.select do |tr|
-    tr.children.search('th').text == "E-mail"
+  mailNode = getDataFromTr(doc,"E-mail")
+  if mailNode.size > 0 then
+    return mailNode.text
   end
-  if inquireInfo.size > 0 then
-    return inquireInfo[0].children.search('td').text
+  mailAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
+    line.text.match(/@/) != nil
   end
+  if mailAry.size > 0 then
+    return mailAry[0].text
+  end
+  return ""
 end
 
-getCorpInfo(corpIds)
+#
+# Parameter : document,key
+# trから情報の取得を行う
+# 
+def getDataFromTr(doc,key)
+  trs = doc.xpath("//tr")
+  inquireInfo = trs.select do |tr|
+    tr.children.search('th').text == key
+  end
+  if inquireInfo.size > 0 then
+    return inquireInfo[0].children.search('td')
+  end
+  return ""
+end
 
-#http://job.mynavi.jp/17/pc/search/corp111394/employment.html
+#
+# Parameter : document
+# telの取得を行う
+# 
+def getTel(doc)
+  telAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
+    line.text.match(/TEL/i) != nil
+  end
+  if telAry.size > 0 then
+    return telAry[0].text.delete('TEL').delete('^0-9|^-')
+  end
+  return ""
+end
+
+html = open($urlHeader + '/17/pc/search/query.html?OP:1/') do |f|
+  charset = f.charset
+  f.read
+end
+
+corpIds = getCorpIdList(Nokogiri::HTML.parse(html, nil, $charset)).split(",")[1..2]
+
+Parallel.map(corpIds,:in_threads => 10) {|id|
+  getCorpInfo(id).printData
+}
+
