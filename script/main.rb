@@ -2,6 +2,7 @@ require 'open-uri'
 require 'nokogiri'
 require 'parallel'
 require 'optparse'
+require 'timeout'
 
 params = ARGV.getopts("","year:17","file:")
 $year = params["year"]
@@ -9,6 +10,9 @@ $resCsv = File.open(params["file"],'a')
 
 $urlHeader = 'http://job.mynavi.jp'
 $charset = nil
+$TIME_OUT = 30
+
+$errorIds = []
 
 class CorpInfo
   def initialize(corpName,empNum,reqNum,mail,tel)
@@ -45,17 +49,27 @@ end
 #
 def getCorpInfo(id)
   corpUrl = $urlHeader + '/' + $year + '/pc/search/corp' + id + '/employment.html'
-  corpHtml = open(corpUrl) do |f|
-    charset = f.charset
-    f.read
+  begin
+  	Timeout.timeout($TIME_OUT) {
+  		corpHtml = open(corpUrl) do |f|
+        charset = f.charset
+        f.read
+      end
+      corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
+      corpName = corpDoc.title.split('|')[0]
+      p corpName
+      empNum = getDataFromPlace(corpDoc,"従業員")
+      reqNum = getDataFromPlace(corpDoc,"募集人数")
+      mail = getMail(corpDoc)
+      tel = getTel(corpDoc)
+      return CorpInfo.new(corpName,empNum,reqNum,mail,tel)
+    }
+  rescue Timeout::Error => e
+  	puts "timeout ......."
+  	sleep(10)
+  rescue => e
+    p e.backtrace
   end
-  corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
-  corpName = corpDoc.title.split('|')[0]
-  empNum = getDataFromPlace(corpDoc,"従業員")
-  reqNum = getDataFromPlace(corpDoc,"募集人数")
-  mail = getMail(corpDoc)
-  tel = getTel(corpDoc)
-  return CorpInfo.new(corpName,empNum,reqNum,mail,tel)
 end
 
 #
@@ -84,13 +98,17 @@ def getMail(doc)
   if mailNode.size > 0 then
     return mailNode.text
   end
-  mailAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
-    line.text.match(/@/) != nil
+  begin
+    mailAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
+      line.text.match(/@/) != nil
+    end
+    if mailAry.size > 0 then
+      return mailAry[0].text
+    end
+    return ""
+  rescue
+  	return ""
   end
-  if mailAry.size > 0 then
-    return mailAry[0].text
-  end
-  return ""
 end
 
 #
@@ -113,13 +131,17 @@ end
 # telの取得を行う
 # 
 def getTel(doc)
-  telAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
-    line.text.match(/TEL/i) != nil
+	begin
+    telAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
+      line.text.match(/TEL/i) != nil
+    end
+    if telAry.size > 0 then
+      return telAry[0].text.delete('TEL').delete('^0-9|^-')
+    end
+    return ""
+  rescue
+  	return ""
   end
-  if telAry.size > 0 then
-    return telAry[0].text.delete('TEL').delete('^0-9|^-')
-  end
-  return ""
 end
 
 html = open($urlHeader + '/17/pc/search/query.html?OP:1/') do |f|
@@ -130,6 +152,13 @@ end
 corpIds = getCorpIdList(Nokogiri::HTML.parse(html, nil, $charset)).split(",")
 
 Parallel.map(corpIds,:in_threads => 10) {|id|
-  getCorpInfo(id).printData
+	begin
+    getCorpInfo(id).printData
+  rescue
+  	puts "error id is " + id
+  	p e.backtrace
+  	$errorIds.push(id)
+  end
 }
 $resCsv.close
+p $errorIds
