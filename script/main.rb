@@ -1,9 +1,6 @@
 require 'open-uri'
 require 'nokogiri'
 
-Class CorpData
-end
-
 # スクレイピング test
 $urlHeader = 'http://job.mynavi.jp'
 $charset = nil
@@ -26,7 +23,7 @@ end
 corpIds = getCorpId(Nokogiri::HTML.parse(html, nil, $charset)).split(",")
 
 def getCorpInfo(corpIds)
-        corpIds.each do |id|
+  corpIds.each do |id|
     corpUrl = $urlHeader + '/17/pc/search/corp' + id + '/employment.html'
     corpHtml = open(corpUrl) do |f|
       charset = f.charset
@@ -36,9 +33,9 @@ def getCorpInfo(corpIds)
     p "##################"
     trs = corpDoc.xpath("//div[@class='companyInfo']//table[@class='dataTable']//tr")
     trs.each do |tr|
-       if tr.children.search("[@class='heading']").text == "募集人数" then
-         p tr.children.search("[@class='sameSize']").text
-       end
+      if tr.children.search("[@class='heading']").text == "募集人数" then
+        p tr.children.search("[@class='sameSize']").text
+      end
     end
   end
 end
