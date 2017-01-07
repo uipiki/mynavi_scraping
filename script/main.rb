@@ -31,6 +31,7 @@ def getCorpInfo(corpIds)
     end
     corpDoc = Nokogiri::HTML.parse(corpHtml, nil, $charset)
     getDataFromPlace(corpDoc,"募集人数")
+    getMail(corpDoc)
   end
 end
 
@@ -47,6 +48,22 @@ def getDataFromPlace(doc,key)
   	return selectedDl[0].children.search('dd').text
   end
   return ""
+end
+
+#
+# Parameter : document
+# メールアドレスの取得を行う
+# 先ずはE-mailから検索し、(実装済)
+# 無ければ問い合わせ先から検索する。
+# 
+def getMail(doc)
+  trs = corpDoc.xpath("//tr")
+  inquireInfo = trs.select do |tr|
+    tr.children.search('th').text == "E-mail"
+  end
+  if inquireInfo.size > 0 then
+    return inquireInfo[0].children.search('td').text
+  end
 end
 
 getCorpInfo(corpIds)
