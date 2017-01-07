@@ -50,8 +50,8 @@ end
 def getCorpInfo(id)
   corpUrl = $urlHeader + '/' + $year + '/pc/search/corp' + id + '/employment.html'
   begin
-  	Timeout.timeout($TIME_OUT) {
-  		corpHtml = open(corpUrl) do |f|
+    Timeout.timeout($TIME_OUT) {
+      corpHtml = open(corpUrl) do |f|
         charset = f.charset
         f.read
       end
@@ -65,8 +65,8 @@ def getCorpInfo(id)
       return CorpInfo.new(corpName,empNum,reqNum,mail,tel)
     }
   rescue Timeout::Error => e
-  	puts "timeout ......."
-  	sleep(10)
+    puts "timeout ......."
+    sleep(10)
   rescue => e
     p e.backtrace
   end
@@ -107,7 +107,7 @@ def getMail(doc)
     end
     return ""
   rescue
-  	return ""
+    return ""
   end
 end
 
@@ -131,7 +131,7 @@ end
 # telの取得を行う
 # 
 def getTel(doc)
-	begin
+  begin
     telAry = getDataFromTr(doc,"問い合わせ先").children.select do |line|
       line.text.match(/TEL/i) != nil
     end
@@ -140,7 +140,7 @@ def getTel(doc)
     end
     return ""
   rescue
-  	return ""
+    return ""
   end
 end
 
