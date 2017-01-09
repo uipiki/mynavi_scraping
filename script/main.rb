@@ -26,7 +26,8 @@ class CorpInfo
   	if data == nil or data == nil then
   		return "NO DATA"
   	end
-  	return data.gsub(/(\r\n|\r|\n)/, " ")
+  	res = data.gsub(/(\r\n|\r|\n)/, " ")
+  	return %("#{res}")
   end
   def getData
   	return getShapedData(@corpName)+","+getShapedData(@empNum)+","+getShapedData(@reqNum)+","+getShapedData(@mail)+","+getShapedData(@tel)
