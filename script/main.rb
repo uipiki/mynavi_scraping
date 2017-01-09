@@ -22,8 +22,14 @@ class CorpInfo
     @mail = mail
     @tel = tel 
   end
+  def getShapedData(data)
+  	if data == nil or data == nil then
+  		return "NO DATA"
+  	end
+  	return data.gsub(/(\r\n|\r|\n)/, " ")
+  end
   def getData
-  	return @corpName+","+@empNum+","+@reqNum+","+@mail+","+@tel
+  	return getShapedData(@corpName)+","+getShapedData(@empNum)+","+getShapedData(@reqNum)+","+getShapedData(@mail)+","+getShapedData(@tel)
   end
   def printData
   	$resCsv.puts getData
