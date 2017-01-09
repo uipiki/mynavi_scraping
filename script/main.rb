@@ -15,12 +15,13 @@ $TIME_OUT = 30
 $errorIds = []
 
 class CorpInfo
-  def initialize(corpName,empNum,reqNum,mail,tel)
+  def initialize(corpName,empNum,reqNum,mail,tel,inquires)
     @corpName = corpName
     @empNum = empNum
     @reqNum = reqNum
     @mail = mail
     @tel = tel 
+    @inquires = inquires
   end
   def getShapedData(data)
   	if data == nil or data == "" then
@@ -30,7 +31,7 @@ class CorpInfo
   	return %("#{res}")
   end
   def getData
-  	return getShapedData(@corpName)+","+getShapedData(@empNum)+","+getShapedData(@reqNum)+","+getShapedData(@mail)+","+getShapedData(@tel)
+  	return getShapedData(@corpName)+","+getShapedData(@empNum)+","+getShapedData(@reqNum)+","+getShapedData(@mail)+","+getShapedData(@tel)+","+getShapedData(@inquires)
   end
   def printData
   	$resCsv.puts getData
@@ -69,7 +70,9 @@ def getCorpInfo(id)
       reqNum = getDataFromPlace(corpDoc,"募集人数")
       mail = getMail(corpDoc)
       tel = getTel(corpDoc)
-      return CorpInfo.new(corpName,empNum,reqNum,mail,tel)
+      inquires = getDataFromTr(corpDoc,"問い合わせ先").text
+      # p inquires
+      return CorpInfo.new(corpName,empNum,reqNum,mail,tel,inquires)
     }
   rescue Timeout::Error => e
     puts "timeout ......."
@@ -163,7 +166,6 @@ Parallel.map(corpIds,:in_threads => 10) {|id|
     getCorpInfo(id).printData
   rescue
     puts "error id is " + id
-    p e.backtrace
     $errorIds.push(id)
   end
 }
