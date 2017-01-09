@@ -23,7 +23,7 @@ class CorpInfo
     @tel = tel 
   end
   def getShapedData(data)
-  	if data == nil or data == nil then
+  	if data == nil or data == "" then
   		return "NO DATA"
   	end
   	res = data.gsub(/(\r\n|\r|\n)/, " ")
